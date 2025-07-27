@@ -1,4 +1,5 @@
 import re
+import os
 import joblib
 import string
 import pandas as pd
@@ -10,10 +11,19 @@ from indoNLP.preprocessing import replace_slang
 from sklearn.metrics import classification_report, confusion_matrix
 import nltk
 
+# Atur lokasi download nltk_data secara eksplisit
+nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
+if not os.path.exists(nltk_data_path):
+    os.mkdir(nltk_data_path)
+
+# Tambahkan path custom ke NLTK
+nltk.data.path.append(nltk_data_path)
+
+# Download punkt ke path tersebut
 try:
     nltk.data.find("tokenizers/punkt")
 except LookupError:
-    nltk.download("punkt")
+    nltk.download("punkt", download_dir=nltk_data_path)
 
 # DEFINE STOPWORDS
 stop_words = {
