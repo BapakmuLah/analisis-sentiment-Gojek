@@ -91,11 +91,14 @@ tfidf = joblib.load("tfidf_vectorizer.pkl")
 
 label_map = {0: "Negatif", 1: "Positif"}
 
+def simple_tokenize(text):
+    return re.findall(r'\b\w+\b', text)
+
 # Preprocessing function
 def preprocess(komentar):
     komentar = komentar.lower()
     komentar_norm = replace_slang(komentar)
-    tokens = word_tokenize(komentar_norm, language = 'english')
+    tokens = simple_tokenize(komentar_norm)
     tokens = [t for t in tokens if not re.search(r'\d', t)]
     tokens = [t for t in tokens if t not in string.punctuation]
     tokens = [t for t in tokens if t not in stop_words]
