@@ -9,7 +9,11 @@ from nltk.tokenize import word_tokenize
 from indoNLP.preprocessing import replace_slang
 from sklearn.metrics import classification_report, confusion_matrix
 import nltk
-nltk.download('punkt')  # penting untuk tokenizer NLTK
+
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt")
 
 # DEFINE STOPWORDS
 stop_words = {
@@ -144,7 +148,9 @@ elif input_method == "Upload File CSV":
                 df_predicted = predict_bulk(df)
                 
                 st.subheader("📄 Tabel Hasil Prediksi")
-                st.dataframe(df_predicted[['komentar', 'prediksi']])
+                df_display = df_predicted.copy()
+                df_display['prediksi'] = df_display['prediksi'].map({0: 'Negatif', 1: 'Positif'})
+                st.dataframe(df_display[['komentar', 'sentiment', 'prediksi']])
                 
                 st.subheader("📊 Statistik Evaluasi (Opsional)")
 
@@ -164,7 +170,17 @@ elif input_method == "Upload File CSV":
                     st.subheader("📉 Confusion Matrix")
                     cm = confusion_matrix(true_labels, df_predicted['prediksi'], labels=[0, 1])
                     fig, ax = plt.subplots()
-                    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+                    sns.heatmap(cm, 
+                                annot=True, 
+                                fmt='d', 
+                                cmap='Blues', 
+                                xticklabels=['Negatif', 'Positif'], 
+                                yticklabels=['Negatif', 'Positif'], 
+                                ax=ax
+                                )
+                    ax.set_xlabel("Prediksi")
+                    ax.set_ylabel("Label Sebenarnya")
+
                     st.pyplot(fig)
 
                 st.subheader("📥 Unduh Hasil")
