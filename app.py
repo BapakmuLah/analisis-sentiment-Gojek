@@ -95,7 +95,7 @@ label_map = {0: "Negatif", 1: "Positif"}
 def preprocess(komentar):
     komentar = komentar.lower()
     komentar_norm = replace_slang(komentar)
-    tokens = word_tokenize(komentar_norm)
+    tokens = word_tokenize(komentar_norm, language = 'english')
     tokens = [t for t in tokens if not re.search(r'\d', t)]
     tokens = [t for t in tokens if t not in string.punctuation]
     tokens = [t for t in tokens if t not in stop_words]
