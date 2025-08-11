@@ -4,6 +4,7 @@
   <img width="400" height="500" alt="gojek" src="https://github.com/user-attachments/assets/ecd250b7-b045-4d50-a858-d52594412a82" />
 </div>
 
+Aplikasi ini sudah di Deploy di Streamlit Cloud. Link Akses : https://sentiment-analysis-gojek-app.streamlit.app/
 ## Tujuan Penelitian
 1. Mengukur kepuasan pengguna secara otomatis
 2. Pemantauan reputasi merek (brand monitoring)
@@ -20,6 +21,8 @@
    - Case Folding
    - Menghapus Tanda Baca
    - Normalisasi kalimat (Mengganti dengan kata baku)
+     - gak, enggak, ngak, ndak --> tidak
+     - pake, make --> memakai
    - Tokenization
    - Menghapus Angka
    - Menghapus Stopwords
