@@ -1,5 +1,6 @@
 import re
 import os
+import nltk
 import joblib
 import string
 import pandas as pd
@@ -9,7 +10,12 @@ import matplotlib.pyplot as plt
 from nltk.tokenize import word_tokenize
 from indoNLP.preprocessing import replace_slang
 from sklearn.metrics import classification_report, confusion_matrix
-import nltk
+
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, Image
 
 # Atur lokasi download nltk_data secara eksplisit
 nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
@@ -133,6 +139,77 @@ def predict_bulk(df):
     st.success("✅ Prediksi selesai!")
     return df
 
+# DOWNLOAD REPORT
+def generate_pdf_report(df, report_stats=None, cm=None):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    
+    # Style untuk teks di tabel agar wrap otomatis
+    table_text_style = ParagraphStyle(
+        'TableParagraph',
+        fontSize=9,
+        leading=12,
+        wordWrap='CJK',  # penting agar teks panjang bisa dibungkus
+    )
+
+    elements = []
+
+    # Judul
+    elements.append(Paragraph("Laporan Analisis Sentimen Ulasan Aplikasi Gojek", styles['Title']))
+    elements.append(Spacer(1, 12))
+
+    # Tabel Hasil Prediksi
+    elements.append(Paragraph("1. Tabel Hasil Prediksi", styles['Heading2']))
+    table_data = [["Komentar", "Label Asli", "Prediksi"]]
+    for _, row in df.iterrows():
+        komentar_paragraph = Paragraph(str(row['komentar']), table_text_style)
+        label_paragraph = Paragraph(str(row.get('sentiment', 'Tidak Ada')), table_text_style)
+        prediksi_paragraph = Paragraph(str(row['prediksi']), table_text_style)
+        table_data.append([komentar_paragraph, label_paragraph, prediksi_paragraph])
+
+    # Atur lebar kolom: komentar lebih lebar
+    table = Table(table_data, colWidths=[300, 80, 80])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 12))
+
+    # Statistik evaluasi
+    if report_stats:
+        elements.append(Paragraph("2. Statistik Evaluasi", styles['Heading2']))
+        for label, metrics in report_stats.items():
+            elements.append(Paragraph(f"{label}: {metrics}", styles['BodyText']))
+        elements.append(Spacer(1, 12))
+
+    # Confusion Matrix sebagai gambar
+    if cm is not None:
+        elements.append(Paragraph("3. Confusion Matrix", styles['Heading2']))
+        fig, ax = plt.subplots()
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                    xticklabels=['Negatif', 'Positif'],
+                    yticklabels=['Negatif', 'Positif'], ax=ax)
+        ax.set_xlabel("Prediksi")
+        ax.set_ylabel("Label Sebenarnya")
+
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png', bbox_inches='tight')
+        plt.close(fig)
+        img_buffer.seek(0)
+        elements.append(Image(img_buffer, width=300, height=300))
+        elements.append(Spacer(1, 12))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+
+
 # UI STREAMLIT
 st.title("📱 Analisis Sentimen Ulasan Aplikasi Gojek")
 st.sidebar.header("🔍 Pilih metode input")
@@ -199,6 +276,19 @@ elif input_method == "Upload File CSV":
                 st.subheader("📥 Unduh Hasil")
                 csv = df_predicted.to_csv(index=False).encode('utf-8')
                 st.download_button("💾 Download Hasil", data=csv, file_name="hasil_sentimen.csv", mime='text/csv')
+
+                # Tombol download PDF laporan
+                if 'sentiment' in df.columns:
+                    pdf_buffer = generate_pdf_report(df_display, report_stats=report, cm=cm)
+                else:
+                    pdf_buffer = generate_pdf_report(df_display)
+
+                st.download_button(
+                label="📄 Download Laporan PDF",
+                data=pdf_buffer,
+                file_name="laporan_sentimen.pdf",
+                mime="application/pdf"
+                )
         except Exception as e:
             st.error(f"Terjadi error saat membaca file: {str(e)}")
 
