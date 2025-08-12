@@ -274,6 +274,7 @@ elif input_method == "Upload File CSV":
                     st.pyplot(fig)
 
                 st.subheader("📥 Unduh Hasil")
+                df_predicted['prediksi'] = df_predicted['prediksi'].map({0: 'Negatif', 1: 'Positif'})  # UBAH LABEL KE STRING
                 csv = df_predicted.to_csv(index=False).encode('utf-8')
                 st.download_button("💾 Download Hasil", data=csv, file_name="hasil_sentimen.csv", mime='text/csv')
 
